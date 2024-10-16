@@ -1,5 +1,8 @@
-use std::{cmp::Ordering, path::Display};
-use std::fmt::Display;
+// SPDX-FileCopyrightText: 2024 Daniel Vrátil <me@dvratil.cz>
+//
+// SPDX-License-Identifier: MIT
+
+use std::cmp::Ordering;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Version {
@@ -156,7 +159,7 @@ mod testing {
         let version: Version = version_string.try_into().unwrap();
         assert_eq!(version, Version { major: 1, minor: 2, patch: 3 });
     }
-    
+
     #[test]
     fn test_display() {
         let version = Version { major: 1, minor: 2, patch: 3 };
