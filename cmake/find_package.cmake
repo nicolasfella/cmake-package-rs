@@ -10,6 +10,12 @@ This is a helper CMake script that is used to execute find_package() and collect
 the results into a JSON file. The JSON file is then read and interpreted by the
 Rust code.
 
+This is basically a regular projec CMakeLists.txt script (except it has documentation :)),
+so it needs to be compied as CMakeLists.txt into some temporary directory and then invoked
+by running `cmake .` in that directory. Some additional arguments must be passed to cmake
+in order to specify the package to find, the output file and optionally the version and
+components to find.
+
 Parameters
 ~~~~~~~~~~
 
