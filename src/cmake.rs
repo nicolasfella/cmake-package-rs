@@ -201,10 +201,6 @@ impl From<PropertyValue> for Vec<String> {
 struct Target {
     name: String,
     location: Option<String>,
-    location_release: Option<String>,
-    location_debug: Option<String>,
-    location_relwithdebinfo: Option<String>,
-    location_minsizerel: Option<String>,
     interface_compile_definitions: Vec<String>,
     interface_compile_options: Vec<String>,
     interface_include_directories: Vec<String>,
