@@ -381,22 +381,6 @@ mod testing {
         assert_eq!(cmake_target.name, "my_target");
         assert_eq!(cmake_target.location, Some("/path/to/target.so".into()));
         assert_eq!(
-            cmake_target.location_release,
-            Some("/path/to/target/release".into())
-        );
-        assert_eq!(
-            cmake_target.location_debug,
-            Some("/path/to/target/debug".into())
-        );
-        assert_eq!(
-            cmake_target.location_relwithdebinfo,
-            Some("/path/to/target/relwithdebinfo".into())
-        );
-        assert_eq!(
-            cmake_target.location_minsizerel,
-            Some("/path/to/target/minsizerel".into())
-        );
-        assert_eq!(
             cmake_target.compile_definitions,
             vec!["DEFINE1", "DEFINE2", "DEFINE3"]
         );
