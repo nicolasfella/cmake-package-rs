@@ -341,10 +341,6 @@ mod testing {
         let target = Target {
             name: "my_target".to_string(),
             location: Some("/path/to/target.so".to_string()),
-            location_release: Some("/path/to/target/release".to_string()),
-            location_debug: Some("/path/to/target/debug".to_string()),
-            location_relwithdebinfo: Some("/path/to/target/relwithdebinfo".to_string()),
-            location_minsizerel: Some("/path/to/target/minsizerel".to_string()),
             interface_compile_definitions: vec!["DEFINE1".to_string(), "DEFINE2".to_string()],
             interface_compile_options: vec!["-O2".to_string(), "-Wall".to_string()],
             interface_include_directories: vec!["/path/to/include".to_string()],
@@ -356,10 +352,6 @@ mod testing {
                 PropertyValue::Target(Target {
                     name: "dependency".to_string(),
                     location: Some("/path/to/dependency.so".to_string()),
-                    location_release: Some("/path/to/dependency/release".to_string()),
-                    location_debug: Some("/path/to/dependency/debug".to_string()),
-                    location_relwithdebinfo: Some("/path/to/dependency/relwithdebinfo".to_string()),
-                    location_minsizerel: Some("/path/to/dependency/minsizerel".to_string()),
                     interface_compile_definitions: vec!["DEFINE3".to_string()],
                     interface_compile_options: vec!["-O3".to_string()],
                     interface_include_directories: vec!["/path/to/dependency/include".to_string()],

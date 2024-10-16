@@ -38,10 +38,8 @@
 //!     }
 //! };
 //!
-//! println!("Include directories: {:?}", target.interface_include_directories);
-//! target.interface_link_libraries.iter().for_each(|lib| {
-//!     println!("cargo:rustc-link-lib=dylib={}", lib);
-//! });
+//! println!("Include directories: {:?}", target.include_directories);
+//! target.link();
 //! ```
 //!
 //! # How Does it Work?
@@ -90,7 +88,7 @@ pub use cmake::{find_cmake, CMakeProgram, Error, CMAKE_MIN_VERSION};
 ///
 /// # Example
 /// ```no_run
-/// use cmake_package::find_package;
+/// use cmake_package::{CMakePackage, find_package};
 ///
 /// let package: CMakePackage = find_package("OpenSSL").version("1.0").find().unwrap();
 /// ```
@@ -148,8 +146,9 @@ impl CMakePackage {
 ///
 /// let package = find_package("OpenSSL").version("1.0").find().unwrap();
 /// let target = package.target("OpenSSL::SSL").unwrap();
-/// println!("Include directories: {:?}", target.interface_include_directories);
-/// println!("Link libraries: {:?}", target.interface_link_libraries);
+/// println!("Include directories: {:?}", target.include_directories);
+/// println!("Link libraries: {:?}", target.link_libraries);
+/// target.link();
 /// ```
 ///
 /// [cc_crate]: https://crates.io/crates/cc
