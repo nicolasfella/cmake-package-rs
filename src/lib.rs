@@ -60,9 +60,9 @@
 //! # Known Limitations
 //!
 //! The crate currently supporst primarily linking against shared libraries. Linking against
-//! static libraries is not tested and may not work as expected. The crate currently does not 
+//! static libraries is not tested and may not work as expected. The crate currently does not
 //! support linking against MacOS frameworks.
-//! 
+//!
 //! There's currently no way to customize the `CMakeLists.txt` file that is used to query the
 //! package or the target in order to extract non-standard properties or variables set by
 //! the CMake package. This may be addressed in the future.
@@ -134,7 +134,7 @@ impl CMakePackage {
 /// Describes a CMake target found in a CMake package.
 ///
 /// The target can be obtained by calling the [`target()`][CMakePackage::target()] method on a [`CMakePackage`] instance.
-/// 
+///
 /// Use [`link()`][Self::link()] method to instruct cargo to link the final binary against the target.
 /// There's currently no way to automatically apply compiler arguments or include directories, since
 /// that depends on how the C/C++ code in your project is compiled (e.g. using the [cc][cc_crate] crate).
@@ -201,7 +201,7 @@ impl CMakeTarget {
     /// [`cargo:rustc-link-arg={}`][cargo_rustc_link_arg], and [`cargo:rustc-link-lib=dylib={}`][cargo_rust_link_lib]
     /// directives to the standard output for each of the target's [`link_directories`][Self::link_directories],
     /// [`link_options`][Self::link_options], and [`link_libraries`][Self::link_libraries] respectively.
-    /// 
+    ///
     /// [cargo_rustc_link_search]: https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-search
     /// [cargo_rustc_link_arg]: https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-arg
     /// [cargo_rustc_link_lib]: https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-lib]

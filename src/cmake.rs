@@ -297,7 +297,10 @@ impl From<Target> for CMakeTarget {
 
 /// Finds the specified target in the CMake package and extracts its properties.
 /// Returns `None` if the target was not found.
-pub(crate) fn find_target(package: &CMakePackage, target: impl Into<String>) -> Option<CMakeTarget> {
+pub(crate) fn find_target(
+    package: &CMakePackage,
+    target: impl Into<String>,
+) -> Option<CMakeTarget> {
     let target = target.into();
 
     // Run the CMake script
@@ -312,10 +315,7 @@ pub(crate) fn find_target(package: &CMakePackage, target: impl Into<String>) -> 
         .arg(format!("-DCMAKE_MIN_VERSION={CMAKE_MIN_VERSION}"))
         .arg(format!("-DPACKAGE={}", package.name))
         .arg(format!("-DTARGET={}", target))
-        .arg(format!(
-            "-DOUTPUT_FILE={}",
-            output_file.display()
-        ));
+        .arg(format!("-DOUTPUT_FILE={}", output_file.display()));
     if let Some(version) = package.version {
         command.arg(format!("-DVERSION={}", version));
     }
@@ -330,7 +330,6 @@ pub(crate) fn find_target(package: &CMakePackage, target: impl Into<String>) -> 
 
     Some(target.into())
 }
-
 
 #[cfg(test)]
 mod testing {
@@ -372,10 +371,7 @@ mod testing {
             cmake_target.compile_definitions,
             vec!["DEFINE1", "DEFINE2", "DEFINE3"]
         );
-        assert_eq!(
-            cmake_target.compile_options,
-            vec!["-O2", "-Wall", "-O3"]
-        );
+        assert_eq!(cmake_target.compile_options, vec!["-O2", "-Wall", "-O3"]);
         assert_eq!(
             cmake_target.include_directories,
             vec!["/path/to/dependency/include", "/path/to/include"]

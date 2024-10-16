@@ -14,7 +14,7 @@ pub struct Version {
 #[derive(Debug, Clone, PartialEq)]
 pub enum VersionError {
     InvalidVersion,
-    VersionTooOld(Version)
+    VersionTooOld(Version),
 }
 
 impl Version {
@@ -106,9 +106,30 @@ mod testing {
 
     #[test]
     fn test_version_parse_valid() {
-        assert_eq!(Version::parse("1.2.3").unwrap(), Version { major: 1, minor: 2, patch: 3 });
-        assert_eq!(Version::parse("1.2").unwrap(), Version { major: 1, minor: 2, patch: 0 });
-        assert_eq!(Version::parse("1").unwrap(), Version { major: 1, minor: 0, patch: 0 });
+        assert_eq!(
+            Version::parse("1.2.3").unwrap(),
+            Version {
+                major: 1,
+                minor: 2,
+                patch: 3
+            }
+        );
+        assert_eq!(
+            Version::parse("1.2").unwrap(),
+            Version {
+                major: 1,
+                minor: 2,
+                patch: 0
+            }
+        );
+        assert_eq!(
+            Version::parse("1").unwrap(),
+            Version {
+                major: 1,
+                minor: 0,
+                patch: 0
+            }
+        );
     }
 
     #[test]
@@ -120,16 +141,32 @@ mod testing {
 
     #[test]
     fn test_version_into_string() {
-        let version = Version { major: 1, minor: 2, patch: 3 };
+        let version = Version {
+            major: 1,
+            minor: 2,
+            patch: 3,
+        };
         let version_str: String = version.into();
         assert_eq!(version_str, "1.2.3");
     }
 
     #[test]
     fn test_version_partial_ord() {
-        let v1 = Version { major: 1, minor: 0, patch: 0 };
-        let v2 = Version { major: 1, minor: 1, patch: 0 };
-        let v3 = Version { major: 1, minor: 1, patch: 1 };
+        let v1 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        };
+        let v2 = Version {
+            major: 1,
+            minor: 1,
+            patch: 0,
+        };
+        let v3 = Version {
+            major: 1,
+            minor: 1,
+            patch: 1,
+        };
 
         assert!(v1 < v2);
         assert!(v2 < v3);
@@ -141,9 +178,21 @@ mod testing {
 
     #[test]
     fn test_version_partial_eq() {
-        let v1 = Version { major: 1, minor: 0, patch: 0 };
-        let v2 = Version { major: 1, minor: 0, patch: 0 };
-        let v3 = Version { major: 1, minor: 1, patch: 0 };
+        let v1 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        };
+        let v2 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        };
+        let v3 = Version {
+            major: 1,
+            minor: 1,
+            patch: 0,
+        };
 
         assert_eq!(v1, v2);
         assert_ne!(v1, v3);
@@ -153,16 +202,34 @@ mod testing {
     fn test_version_try_into() {
         let version_str = "1.2.3";
         let version: Version = version_str.try_into().unwrap();
-        assert_eq!(version, Version { major: 1, minor: 2, patch: 3 });
+        assert_eq!(
+            version,
+            Version {
+                major: 1,
+                minor: 2,
+                patch: 3
+            }
+        );
 
         let version_string = String::from("1.2.3");
         let version: Version = version_string.try_into().unwrap();
-        assert_eq!(version, Version { major: 1, minor: 2, patch: 3 });
+        assert_eq!(
+            version,
+            Version {
+                major: 1,
+                minor: 2,
+                patch: 3
+            }
+        );
     }
 
     #[test]
     fn test_display() {
-        let version = Version { major: 1, minor: 2, patch: 3 };
+        let version = Version {
+            major: 1,
+            minor: 2,
+            patch: 3,
+        };
         assert_eq!(format!("{}", version), "1.2.3");
     }
 }
