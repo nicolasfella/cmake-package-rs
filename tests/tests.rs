@@ -36,7 +36,7 @@ fn test_cmake_not_in_path() {
 #[serial]
 fn test_cmake_version_too_old() {
     let _path_guard = common::use_cmake("cmake_old");
-
+    println!("PATH: {:?}", std::env::var("PATH").unwrap());
     match find_cmake().expect_err("cmake should be too old") {
         Error::UnsupportedCMakeVersion => {}
         err => panic!(

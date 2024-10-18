@@ -1,5 +1,6 @@
+use itertools::chain;
 use scopeguard::{guard, ScopeGuard};
-use std::path::PathBuf;
+use std::{iter::once, path::PathBuf};
 
 pub fn use_cmake(name: &str) -> ScopeGuard<(), impl FnOnce(())> {
     let path = std::env::var("PATH").expect("Path not set?");
@@ -10,7 +11,14 @@ pub fn use_cmake(name: &str) -> ScopeGuard<(), impl FnOnce(())> {
     assert!(cmake_path.exists());
     assert!(cmake_path.is_dir());
 
-    std::env::set_var("PATH", format!("{}:{}", cmake_path.to_str().unwrap(), path));
+    // Prepend the custom cmake path to the PATH in platform-independent way
+    let modfied_path = std::env::join_paths(chain!(
+        once(PathBuf::from(cmake_path)),
+        std::env::split_paths(&path)
+    ))
+    .unwrap();
+
+    std::env::set_var("PATH", modfied_path);
 
     guard((), |_| {
         std::env::set_var("PATH", path);
