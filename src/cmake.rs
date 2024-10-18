@@ -9,7 +9,7 @@ use itertools::Itertools;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tempfile::{tempdir_in, TempDir};
+use tempfile::TempDir;
 use which::which;
 
 /// The minimum version of CMake required by this crate.
@@ -96,7 +96,10 @@ fn get_temporary_working_directory() -> Result<TempDir, Error> {
     }));
 
     // Make a unique directory inside
-    tempdir_in(out_dir).or(Err(Error::Internal))
+    tempfile::Builder::new()
+        .prefix("cmake-package-rs")
+        .tempdir_in(out_dir)
+        .or(Err(Error::Internal))
 }
 
 fn setup_cmake_project(working_directory: &Path) -> Result<(), Error> {
