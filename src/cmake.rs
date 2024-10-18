@@ -174,7 +174,8 @@ pub(crate) fn find_package(
     ))
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(untagged)]
 enum PropertyValue {
     String(String),
     Target(Target),
@@ -192,6 +193,7 @@ impl From<PropertyValue> for Vec<String> {
             .chain(
                 target
                     .interface_link_libraries
+                    .unwrap_or_default()
                     .into_iter()
                     .flat_map(Into::<Vec<String>>::into),
             )
@@ -200,16 +202,17 @@ impl From<PropertyValue> for Vec<String> {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Default, Deserialize, Clone)]
+#[serde(default, rename_all = "UPPERCASE")]
 struct Target {
     name: String,
     location: Option<String>,
-    interface_compile_definitions: Vec<String>,
-    interface_compile_options: Vec<String>,
-    interface_include_directories: Vec<String>,
-    interface_link_directories: Vec<String>,
-    interface_link_libraries: Vec<PropertyValue>,
-    interface_link_options: Vec<String>,
+    interface_compile_definitions: Option<Vec<String>>,
+    interface_compile_options: Option<Vec<String>>,
+    interface_include_directories: Option<Vec<String>>,
+    interface_link_directories: Option<Vec<String>>,
+    interface_link_libraries: Option<Vec<PropertyValue>>,
+    interface_link_options: Option<Vec<String>>,
 }
 
 /// Collects values from `property` of the current target and from `property` of
@@ -230,13 +233,17 @@ struct Target {
 /// [target_link_libraries]: https://cmake.org/cmake/help/latest/command/target_link_libraries.html
 fn collect_from_targets<'a>(
     target: &'a Target,
-    property: impl Fn(&Target) -> Vec<String> + 'a + Copy,
+    property: impl Fn(&Target) -> &Option<Vec<String>> + 'a + Copy,
 ) -> Vec<String> {
     property(target)
+        .as_ref()
+        .map_or(Vec::new(), Clone::clone)
         .into_iter()
         .chain(
             target
                 .interface_link_libraries
+                .as_ref()
+                .map_or(Vec::new(), Clone::clone)
                 .iter()
                 .filter_map(|value| match value {
                     PropertyValue::String(_) => None,
@@ -251,7 +258,7 @@ fn collect_from_targets<'a>(
 /// care, as the order of the properties might be important (e.g. for compile options).
 fn collect_from_targets_unique<'a>(
     target: &'a Target,
-    property: impl Fn(&Target) -> Vec<String> + 'a + Copy,
+    property: impl Fn(&Target) -> &Option<Vec<String>> + 'a + Copy,
 ) -> Vec<String> {
     collect_from_targets(target, property)
         .into_iter()
@@ -264,20 +271,18 @@ impl From<Target> for CMakeTarget {
     fn from(target: Target) -> Self {
         Self {
             compile_definitions: collect_from_targets_unique(&target, |target| {
-                target.interface_compile_definitions.clone()
+                &target.interface_compile_definitions
             }),
             compile_options: collect_from_targets(&target, |target| {
-                target.interface_compile_options.clone()
+                &target.interface_compile_options
             }),
             include_directories: collect_from_targets_unique(&target, |target| {
-                target.interface_include_directories.clone()
+                &target.interface_include_directories
             }),
             link_directories: collect_from_targets_unique(&target, |target| {
-                target.interface_link_directories.clone()
+                &target.interface_link_directories
             }),
-            link_options: collect_from_targets(&target, |target| {
-                target.interface_link_options.clone()
-            }),
+            link_options: collect_from_targets(&target, |target| &target.interface_link_options),
             link_libraries: target
                 .location
                 .as_ref()
@@ -286,6 +291,8 @@ impl From<Target> for CMakeTarget {
                 .chain(
                     target
                         .interface_link_libraries
+                        .as_ref()
+                        .map_or(Vec::new(), Clone::clone)
                         .into_iter()
                         .flat_map(Into::<Vec<String>>::into),
                 )
@@ -304,13 +311,13 @@ pub(crate) fn find_target(
     package: &CMakePackage,
     target: impl Into<String>,
 ) -> Option<CMakeTarget> {
-    let target = target.into();
+    let target: String = target.into();
 
     // Run the CMake script
-    let output_file = package
-        .working_directory
-        .path()
-        .join(format!("target_{}.json", target));
+    let output_file = package.working_directory.path().join(format!(
+        "target_{}.json",
+        target.to_lowercase().replace(":", "_")
+    ));
     let mut command = Command::new(&package.cmake.path);
     command
         .current_dir(package.working_directory.path())
@@ -328,8 +335,12 @@ pub(crate) fn find_target(
     command.output().ok()?;
 
     // Read from the generated JSON file
-    let reader = std::fs::File::open(output_file).ok()?;
-    let target: Target = serde_json::from_reader(reader).ok()?;
+    let reader = std::fs::File::open(&output_file).ok()?;
+    let target: Target = serde_json::from_reader(reader)
+        .map_err(|e| {
+            eprintln!("Failed to parse target JSON: {:?}", e);
+        })
+        .ok()?;
 
     Some(target.into())
 }
@@ -343,27 +354,29 @@ mod testing {
         let target = Target {
             name: "my_target".to_string(),
             location: Some("/path/to/target.so".to_string()),
-            interface_compile_definitions: vec!["DEFINE1".to_string(), "DEFINE2".to_string()],
-            interface_compile_options: vec!["-O2".to_string(), "-Wall".to_string()],
-            interface_include_directories: vec!["/path/to/include".to_string()],
-            interface_link_directories: vec!["/path/to/lib".to_string()],
-            interface_link_options: vec!["-L/path/to/lib".to_string()],
-            interface_link_libraries: vec![
+            interface_compile_definitions: Some(vec!["DEFINE1".to_string(), "DEFINE2".to_string()]),
+            interface_compile_options: Some(vec!["-O2".to_string(), "-Wall".to_string()]),
+            interface_include_directories: Some(vec!["/path/to/include".to_string()]),
+            interface_link_directories: Some(vec!["/path/to/lib".to_string()]),
+            interface_link_options: Some(vec!["-L/path/to/lib".to_string()]),
+            interface_link_libraries: Some(vec![
                 PropertyValue::String("library1".to_string()),
                 PropertyValue::String("library2".to_string()),
                 PropertyValue::Target(Target {
                     name: "dependency".to_string(),
                     location: Some("/path/to/dependency.so".to_string()),
-                    interface_compile_definitions: vec!["DEFINE3".to_string()],
-                    interface_compile_options: vec!["-O3".to_string()],
-                    interface_include_directories: vec!["/path/to/dependency/include".to_string()],
-                    interface_link_directories: vec!["/path/to/dependency/lib".to_string()],
-                    interface_link_options: vec!["-L/path/to/dependency/lib".to_string()],
-                    interface_link_libraries: vec![PropertyValue::String(
+                    interface_compile_definitions: Some(vec!["DEFINE3".to_string()]),
+                    interface_compile_options: Some(vec!["-O3".to_string()]),
+                    interface_include_directories: Some(vec![
+                        "/path/to/dependency/include".to_string()
+                    ]),
+                    interface_link_directories: Some(vec!["/path/to/dependency/lib".to_string()]),
+                    interface_link_options: Some(vec!["-L/path/to/dependency/lib".to_string()]),
+                    interface_link_libraries: Some(vec![PropertyValue::String(
                         "dependency_library".to_string(),
-                    )],
+                    )]),
                 }),
-            ],
+            ]),
         };
 
         let cmake_target: CMakeTarget = target.into();
@@ -397,5 +410,49 @@ mod testing {
                 "library2",
             ]
         );
+    }
+
+    #[test]
+    fn from_json() {
+        let json = r#"
+{
+  "INTERFACE_INCLUDE_DIRECTORIES" : [ "/usr/include" ],
+  "INTERFACE_LINK_LIBRARIES" :
+  [
+    {
+      "INTERFACE_INCLUDE_DIRECTORIES" : [ "/usr/include" ],
+      "LOCATION" : "/usr/lib/libcrypto.so",
+      "NAME" : "OpenSSL::Crypto"
+    }
+  ],
+  "LOCATION" : "/usr/lib/libssl.so",
+  "NAME" : "OpenSSL::SSL"
+}
+"#;
+        let target: Target = serde_json::from_str(json).expect("Failed to parse JSON");
+        assert_eq!(target.name, "OpenSSL::SSL");
+        assert_eq!(target.location, Some("/usr/lib/libssl.so".to_string()));
+        assert_eq!(
+            target.interface_include_directories,
+            Some(vec!["/usr/include".to_string()])
+        );
+        assert!(target.interface_link_libraries.is_some());
+        assert_eq!(target.interface_link_libraries.as_ref().unwrap().len(), 1);
+        let sub_target = target
+            .interface_link_libraries
+            .as_ref()
+            .unwrap()
+            .first()
+            .unwrap();
+        match sub_target {
+            PropertyValue::Target(sub_target) => {
+                assert_eq!(sub_target.name, "OpenSSL::Crypto");
+                assert_eq!(
+                    sub_target.location,
+                    Some("/usr/lib/libcrypto.so".to_string())
+                );
+            }
+            _ => panic!("Expected PropertyValue::Target"),
+        }
     }
 }
