@@ -163,9 +163,11 @@ endfunction()
 ###################################################################################
 function(resolve_deps_recursively)
     cmake_parse_arguments(ARG "" "TARGET;OUTPUT_JSON" "" ${ARGN})
-    set(props
+    set(single_value_props
         NAME
         LOCATION
+    )
+    set(multi_value_props
         INTERFACE_COMPILE_DEFINITIONS
         INTERFACE_COMPILE_OPTIONS
         INTERFACE_INCLUDE_DIRECTORIES
@@ -191,7 +193,15 @@ function(resolve_deps_recursively)
     endforeach()
 
     set(json "{}")
-    foreach(prop ${props})
+    foreach(prop ${single_value_props})
+        set(value)
+        get_target_property(value ${ARG_TARGET} ${prop})
+        if (value)
+            string(JSON json SET ${json} ${prop} "\"${value}\"")
+        endif()
+    endforeach()
+
+    foreach(prop ${multi_value_props})
         set(value)
         resolve_target_prop(TARGET ${ARG_TARGET} PROPERTY ${prop} OUT_VAR value)
         if (value)
@@ -261,6 +271,7 @@ function (find_package_target)
             OUTPUT_JSON json
         )
         file(WRITE ${ARG_OUTPUT_FILE} ${json})
+        message(STATUS "Target details written to ${ARG_OUTPUT_FILE}")
     else()
         # We found the package before, how come we did not find it this time?!
         message(FATAL_ERROR "Package ${FP_PACKAGE} not found")
