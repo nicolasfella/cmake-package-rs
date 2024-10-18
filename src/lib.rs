@@ -63,6 +63,11 @@
 //! static libraries is not tested and may not work as expected. The crate currently does not
 //! support linking against MacOS frameworks.
 //!
+//! [CMake generator expressions][cmake_generator_expr] are not supported in property values
+//! right now, because they are evaluated at later stage of the build, not during the "configure"
+//! phase of CMake, which is what this crate does. Some generator expressions could be supported
+//! by the crate in the future (e.g. by evaluating them ourselves).
+//!
 //! There's currently no way to customize the `CMakeLists.txt` file that is used to query the
 //! package or the target in order to extract non-standard properties or variables set by
 //! the CMake package. This may be addressed in the future.
@@ -72,6 +77,7 @@
 //! [cmake_target]: https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html#target-build-specification
 //! [cargo_build_script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 //! [cmake_find_package]: https://cmake.org/cmake/help/latest/command/find_package.html
+//! [cmake_generator_expr]: https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
 
 use tempfile::TempDir;
 use version::Version;
