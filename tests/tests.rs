@@ -63,7 +63,7 @@ fn test_missing_find_package() {
 
 #[test]
 #[serial]
-#[ignore = "Requires OpenSSL installed"]
+#[cfg_attr(target_os = "windows", ignore = "Requires OpenSSL installed")]
 fn test_find_openssl() {
     let _tmpdir = common::set_outdir();
 
