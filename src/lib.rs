@@ -80,12 +80,12 @@
 //! [cmake_generator_expr]: https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
 
 use tempfile::TempDir;
-use version::Version;
 
 mod cmake;
 mod version;
 
 pub use cmake::{find_cmake, CMakeProgram, Error, CMAKE_MIN_VERSION};
+pub use version::{Version, VersionError};
 
 /// A CMake package found on the system.
 ///
