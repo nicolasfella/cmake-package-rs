@@ -178,7 +178,7 @@ function(resolve_deps_recursively)
         INTERFACE_LINK_OPTIONS
     )
     set(cfg_props
-        LOCATION
+        #LOCATION
     )
     set(cfg_types
         Release
