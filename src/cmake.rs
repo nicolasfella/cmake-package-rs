@@ -8,7 +8,7 @@ use crate::{CMakePackage, CMakeTarget};
 use itertools::Itertools;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use tempfile::TempDir;
 use which::which;
 
@@ -111,11 +111,20 @@ fn setup_cmake_project(working_directory: &Path) -> Result<(), Error> {
     Ok(())
 }
 
+fn stdio(verbose: bool) -> Stdio {
+    if verbose {
+        Stdio::inherit()
+    } else {
+        Stdio::null()
+    }
+}
+
 /// Performs the actual `find_package()` operation with CMake
 pub(crate) fn find_package(
     name: String,
     version: Option<Version>,
     components: Option<Vec<String>>,
+    verbose: bool,
 ) -> Result<CMakePackage, Error> {
     // Find cmake or panic
     let cmake = find_cmake()?;
@@ -128,7 +137,9 @@ pub(crate) fn find_package(
     // Run the CMake - see the find_package.cmake script for docs
     let mut command = Command::new(&cmake.path);
     command
-        .current_dir(working_directory.path())
+        .stdout(stdio(verbose))
+        .stderr(stdio(verbose))
+        .current_dir(&working_directory)
         .arg(".")
         .arg(format!("-DCMAKE_MIN_VERSION={CMAKE_MIN_VERSION}"))
         .arg(format!("-DPACKAGE={}", name))
@@ -171,6 +182,7 @@ pub(crate) fn find_package(
         package_name,
         package_version,
         package.components,
+        verbose,
     ))
 }
 
@@ -320,6 +332,8 @@ pub(crate) fn find_target(
     ));
     let mut command = Command::new(&package.cmake.path);
     command
+        .stdout(stdio(package.verbose))
+        .stderr(stdio(package.verbose))
         .current_dir(package.working_directory.path())
         .arg(".")
         .arg(format!("-DCMAKE_MIN_VERSION={CMAKE_MIN_VERSION}"))

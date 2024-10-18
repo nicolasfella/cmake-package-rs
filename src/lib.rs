@@ -102,6 +102,7 @@ pub use version::{Version, VersionError};
 pub struct CMakePackage {
     cmake: CMakeProgram,
     working_directory: TempDir,
+    verbose: bool,
 
     /// Name of the CMake package
     pub name: String,
@@ -118,6 +119,7 @@ impl CMakePackage {
         name: String,
         version: Option<Version>,
         components: Option<Vec<String>>,
+        verbose: bool,
     ) -> Self {
         Self {
             cmake,
@@ -125,6 +127,7 @@ impl CMakePackage {
             name,
             version,
             components,
+            verbose,
         }
     }
 
@@ -233,6 +236,7 @@ pub struct FindPackageBuilder {
     name: String,
     version: Option<Version>,
     components: Option<Vec<String>>,
+    verbose: bool,
 }
 
 impl FindPackageBuilder {
@@ -241,6 +245,7 @@ impl FindPackageBuilder {
             name,
             version: None,
             components: None,
+            verbose: false,
         }
     }
 
@@ -271,10 +276,20 @@ impl FindPackageBuilder {
         }
     }
 
+    /// Enable verbose output.
+    /// This will redirect output from actual execution of the `cmake` command to the standard output
+    /// and standard error of the build script.
+    pub fn verbose(self) -> Self {
+        Self {
+            verbose: true,
+            ..self
+        }
+    }
+
     /// Tries to find the CMake package on the system.
     /// Returns a [`CMakePackage`] instance if the package is found, otherwise an error.
     pub fn find(self) -> Result<CMakePackage, cmake::Error> {
-        cmake::find_package(self.name, self.version, self.components)
+        cmake::find_package(self.name, self.version, self.components, self.verbose)
     }
 }
 

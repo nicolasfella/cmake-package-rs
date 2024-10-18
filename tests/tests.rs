@@ -52,6 +52,7 @@ fn test_missing_find_package() {
     let _tmpdir = common::set_outdir();
 
     match find_package("ThisPackageDefinitelyDoesNotExist")
+        .verbose()
         .find()
         .expect_err("Found a package that possibly cannot exist")
     {
@@ -67,6 +68,7 @@ fn test_find_openssl() {
     let _tmpdir = common::set_outdir();
 
     let package = find_package("OpenSSL")
+        .verbose()
         .find()
         .expect("Failed to find OpenSSL");
     assert_eq!(package.name, "OpenSSL");
@@ -100,6 +102,7 @@ fn test_find_qt() {
     let package = find_package("Qt6")
         .components(vec!["Core".into(), "Gui".into(), "Widgets".into()])
         .version("6.2")
+        .verbose()
         .find()
         .expect("Failed to find Qt6");
     assert_eq!(package.name, "Qt6");
