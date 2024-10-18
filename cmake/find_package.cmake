@@ -82,7 +82,7 @@ project(cmake-package)
 #   COMPONENTS: The components to find (optional)
 ###################################################################################
 function(find_package_wrapper)
-    cmake_parse_arguments(FP "" "PACKAGE;VERSION;COMPONENTS;OUTPUT_FILE" "" ${ARGN})
+    cmake_parse_arguments(FP "" "PACKAGE;VERSION;OUTPUT_FILE" "COMPONENTS" ${ARGN})
     if (NOT FP_PACKAGE)
         message(FATAL_ERROR "PACKAGE is not set")
     endif()
@@ -93,16 +93,16 @@ function(find_package_wrapper)
     # Don't specify the version here, even if FP_VERSION is set - we want to find the package
     # even if the version is too old in order to be able to return the found version back to
     # the Rust code.
-    find_package(${FP_PACKAGE} QUIET COMPONENTS ${FP_COMPONENTS})
+    find_package(${FP_PACKAGE} COMPONENTS ${FP_COMPONENTS})
     # Package found?
     if (${FP_PACKAGE}_FOUND)
         # Write its name into the JSON
         string(JSON json SET "{ }" "name" "\"${FP_PACKAGE}\"")
         # If we also found a version, write its version
-        if (DEFINED ${FP_PACKAGE}_VERSION)
+        if (${FP_PACKAGE}_VERSION)
             string(JSON json SET ${json} "version" "\"${${FP_PACKAGE}_VERSION}\"")
         endif()
-        if (DEFINED ${FP_COMPONENTS})
+        if (FP_COMPONENTS)
             string(REPLACE ";" "\",\"" component_array "${FP_COMPONENTS}")
             string(JSON json SET ${json} "components" "[\"${component_array}\"]")
         endif()
@@ -241,7 +241,7 @@ endfunction()
 #   VERSION: The minimum version of the package to find (optional)
 ###################################################################################
 function (find_package_target)
-    cmake_parse_arguments(ARG "" "PACKAGE;COMPONENTS;VERSION;TARGET;OUTPUT_FILE" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "PACKAGE;VERSION;TARGET;OUTPUT_FILE" "COMPONENTS" ${ARGN})
     if (NOT ARG_PACKAGE)
         message(FATAL_ERROR "PACKAGE argument is not set")
     endif()
@@ -282,14 +282,14 @@ endif()
 if (NOT DEFINED TARGET)
     find_package_wrapper(
         PACKAGE ${PACKAGE}
-        COMPONENTS ${COMPONENTS}
+        COMPONENTS "${COMPONENTS}"
         VERSION ${VERSION}
         OUTPUT_FILE ${OUTPUT_FILE}
     )
 else()
     find_package_target(
         PACKAGE ${PACKAGE}
-        COMPONENTS ${COMPONENTS}
+        COMPONENTS "${COMPONENTS}"
         VERSION ${VERSION}
         TARGET ${TARGET}
         OUTPUT_FILE ${OUTPUT_FILE}
