@@ -1,0 +1,3 @@
+[profile.ci]
+# Allow the CI to run the full test-suite
+fail-fast = false
