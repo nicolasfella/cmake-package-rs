@@ -306,3 +306,7 @@ else()
         OUTPUT_FILE ${OUTPUT_FILE}
     )
 endif()
+
+include(FeatureSummary)
+
+feature_summary(WHAT PACKAGES_FOUND PACKAGES_NOT_FOUND)
