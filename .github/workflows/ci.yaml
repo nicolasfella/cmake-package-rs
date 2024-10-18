@@ -20,6 +20,7 @@ jobs:
           #- macos-latest TODO
       fail-fast: false
     env:
+      CARGO_TERM_COLOR: always
       RUSTFLAGS: "-D warnings"
       RUST_BACKTRACE: full
 
