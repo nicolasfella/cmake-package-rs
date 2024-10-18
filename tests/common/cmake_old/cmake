@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Write an old version to stderr
+echo "3.12.4" 1>&2
