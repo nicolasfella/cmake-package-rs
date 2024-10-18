@@ -63,7 +63,7 @@ fn test_missing_find_package() {
 
 #[test]
 #[serial]
-#[cfg(target_os = "linux")]
+#[ignore = "Requires OpenSSL installed"]
 fn test_find_openssl() {
     let _tmpdir = common::set_outdir();
 
@@ -78,23 +78,31 @@ fn test_find_openssl() {
         .target("OpenSSL::SSL")
         .expect("Failed to find OpenSSL::SSL target");
     assert_eq!(target.name, "OpenSSL::SSL");
-    assert_eq!(target.include_directories, vec!["/usr/include"]);
-    assert_eq!(target.link_libraries.len(), 2);
-    // The actual path will vary depending on the system, and the library may itself may have a
-    // soname, so we just check for the presence of the library name.
-    assert!(target
-        .link_libraries
-        .iter()
-        .any(|lib| lib.contains("libcrypto.so")));
-    assert!(target
-        .link_libraries
-        .iter()
-        .any(|lib| lib.contains("libssl.so")));
+    if cfg!(target_os = "linux") {
+        assert_eq!(target.include_directories, vec!["/usr/include"]);
+        assert!(target.location.unwrap().contains("libssl.so"));
+        assert_eq!(target.link_libraries.len(), 2);
+        // The actual path will vary depending on the system, and the library may itself may have a
+        // soname, so we just check for the presence of the library name.
+        assert!(target
+            .link_libraries
+            .iter()
+            .any(|lib| lib.contains("libcrypto.so")));
+        assert!(target
+            .link_libraries
+            .iter()
+            .any(|lib| lib.contains("libssl.so")));
+    } else if cfg!(target_os = "windows") {
+        assert_eq!(target.include_directories, vec!["C:/Program Files/OpenSSL-Win64/include"]);
+        assert!(target.location.unwrap().contains("libssl64MD.lib"));
+        assert!(target.link_libraries.len() >= 2);
+        assert!(target.link_libraries.iter().any(|lib| lib.contains("libcrypto64MD.lib")));
+        assert!(target.link_libraries.iter().any(|lib| lib.contains("libssl64MD.lib")));
+    }
 }
 
 #[test]
 #[serial]
-#[cfg(target_os = "linux")]
 #[ignore = "Requires Qt installed"]
 fn test_find_qt() {
     let _tmpdir = common::set_outdir();
@@ -116,38 +124,75 @@ fn test_find_qt() {
         .target("Qt6::Core")
         .expect("Failed to find Qt6::Core target");
     assert_eq!(core.name, "Qt6::Core");
-    assert!(core.location.unwrap().contains("libQt6Core.so"));
-    assert_eq!(
-        core.include_directories,
-        vec![
-            "/usr/include/qt6".to_string(),
-            "/usr/include/qt6/QtCore".to_string(),
-            "/usr/lib/qt6/mkspecs/linux-g++".to_string()
-        ]
-    );
+    if cfg!(target_os = "linux") {
+        assert!(core.location.unwrap().contains("libQt6Core.so"));
+        assert_eq!(
+            core.include_directories,
+            vec![
+                "/usr/include/qt6".to_string(),
+                "/usr/include/qt6/QtCore".to_string(),
+                "/usr/lib/qt6/mkspecs/linux-g++".to_string()
+            ]
+        );
+    } else if cfg!(target_os = "windows") {
+        assert!(core.location.unwrap().contains("Qt6Core.dll"));
+        for def in vec!["QT_CORE_LIB", "WIN32", "WIN64"] {
+            assert!(core.compile_definitions.contains(&def.to_string()));
+        }
+        for lib in vec!["Qt6Core.dll", "mpr", "userenv"] {
+            assert!(core.link_libraries.iter().any(|l| l.contains(lib)))
+        }
+        assert_eq!(
+            core.include_directories,
+            vec![
+                "C:/Qt/6.6.1/msvc2019_64/include".to_string(),
+                "C:/Qt/6.6.1/msvc2019_64/include/QtCore".to_string(),
+                "C:/Qt/6.6.1/msvc2019_64/mkspecs/win32-msvc".to_string()
+            ]
+        );
 
+    }
+    
     let gui = package
         .target("Qt6::Gui")
         .expect("Failed to find Qt6::Gui target");
+    println!("gui: {:?}", gui);
     assert_eq!(gui.name, "Qt6::Gui");
-    assert!(gui.location.unwrap().contains("libQt6Gui.so"));
-    assert_eq!(
-        gui.compile_definitions,
-        vec!["QT_CORE_LIB".to_string(), "QT_GUI_LIB".to_string()]
-    );
-    assert_eq!(
-        gui.include_directories,
-        vec![
-            "/usr/include".to_string(),
-            "/usr/include/qt6".to_string(),
-            "/usr/include/qt6/QtCore".to_string(),
-            "/usr/include/qt6/QtGui".to_string(),
-            "/usr/lib/qt6/mkspecs/linux-g++".to_string()
-        ]
-    );
-    assert!(gui.link_libraries.len() >= 4);
-    assert!(gui.link_libraries.iter().find(|lib| lib.contains("libQt6Core.so")).is_some());
-    assert!(gui.link_libraries.iter().find(|lib| lib.contains("libQt6Gui.so")).is_some());
-    assert!(gui.link_libraries.iter().find(|lib| lib.contains("libOpenGL.so")).is_some());
-    assert!(gui.link_libraries.iter().find(|lib| lib.contains("libGLX.so")).is_some());
+    if cfg!(target_os = "linux") {
+        assert!(gui.location.unwrap().contains("libQt6Gui.so"));
+        assert_eq!(
+            gui.compile_definitions,
+            vec!["QT_CORE_LIB".to_string(), "QT_GUI_LIB".to_string()]
+        );
+        for lib in vec!["libQt6Core.so", "libQt6Gui.so", "libOpenGL.so", "libGLX.so"] {
+            assert!(gui.link_libraries.iter().any(|l| l.contains(lib)))
+        }
+        assert_eq!(
+            gui.include_directories,
+            vec![
+                "/usr/include".to_string(),
+                "/usr/include/qt6".to_string(),
+                "/usr/include/qt6/QtCore".to_string(),
+                "/usr/include/qt6/QtGui".to_string(),
+                "/usr/lib/qt6/mkspecs/linux-g++".to_string()
+            ]
+        );
+    } else if cfg!(target_os = "windows") {
+        assert!(gui.location.unwrap().contains("Qt6Gui.dll"));
+        for def in vec!["QT_CORE_LIB", "QT_GUI_LIB", "WIN32", "WIN64"] {
+            assert!(gui.compile_definitions.contains(&def.to_string()));
+        }
+        for lib in vec!["Qt6Gui.dll", "Qt6Core.dll", "mpr", "userenv"] {
+            assert!(gui.link_libraries.iter().any(|l| l.contains(lib)))
+        }
+        assert_eq!(
+            gui.include_directories,
+            vec![
+                "C:/Qt/6.6.1/msvc2019_64/include".to_string(),
+                "C:/Qt/6.6.1/msvc2019_64/include/QtCore".to_string(),
+                "C:/Qt/6.6.1/msvc2019_64/include/QtGui".to_string(),
+                "C:/Qt/6.6.1/msvc2019_64/mkspecs/win32-msvc".to_string()
+            ]
+        )
+    }
 }
