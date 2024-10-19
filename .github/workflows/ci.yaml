@@ -54,4 +54,4 @@ jobs:
         if: success() || failure()
         with:
           name: test-results
-          path: target/nextest/ci/test-report.junit.xml
+          path: target/nextest/ci/test-report-${{ matrix.os }}.junit.xml
