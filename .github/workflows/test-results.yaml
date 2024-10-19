@@ -23,7 +23,7 @@ jobs:
     steps:
     - uses: dorny/test-reporter@v1
       with:
-        artifact: test-results-${{ os.matrix }}
-        name: Tests - {{ os.matrix }}
+        artifact: test-results-${{ matrix.os }}
+        name: Tests - ${{ matrix.os }}
         path: '*.xml'
         reporter: java-junit
