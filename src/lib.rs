@@ -236,7 +236,7 @@ impl CMakeTarget {
 /// A builder for creating a [`CMakePackage`] instance. An instance of the builder is created by calling
 /// the [`find_package()`] function. Once the package is configured, [`FindPackageBuilder::find()`] will actually
 /// try to find the CMake package and return a [`CMakePackage`] instance (or error if the package is not found
-/// or an error occurrs during the search).
+/// or an error occurs during the search).
 #[derive(Debug, Clone)]
 pub struct FindPackageBuilder {
     name: String,
@@ -320,7 +320,7 @@ pub fn find_package(name: impl Into<String>) -> FindPackageBuilder {
 mod testing {
     use super::*;
 
-    // Note: requries cmake to be installed on the system
+    // Note: requires cmake to be installed on the system
     #[test]
     fn test_find_package() {
         let package = find_package("totallynonexistentpackage").find();
@@ -331,7 +331,7 @@ mod testing {
         }
     }
 
-    // Note: requries cmake to be installed on the system
+    // Note: requires cmake to be installed on the system
     #[test]
     fn test_find_package_with_version() {
         let package = find_package("foo").version("1.0").find();

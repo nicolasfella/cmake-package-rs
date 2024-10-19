@@ -30,7 +30,7 @@ fn script_path(script: &str) -> PathBuf {
         .join(script)
 }
 
-/// Errors tha can occur while working with CMake.
+/// Errors that can occur while working with CMake.
 #[derive(Debug)]
 pub enum Error {
     /// The `cmake` executable was not found in system `PATH` environment variable.
