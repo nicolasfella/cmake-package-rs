@@ -63,8 +63,9 @@ fn test_missing_find_package() {
 #[test]
 #[serial]
 #[cfg_attr(target_os = "windows", ignore = "Requires OpenSSL installed")]
-fn test_find_openssl() {
+fn test_find_openssl_release() {
     let _tmpdir = common::set_outdir();
+    let _profile = common::set_profile(common::Profile::Release);
 
     let package = find_package("OpenSSL")
         .verbose()
@@ -103,8 +104,9 @@ fn test_find_openssl() {
 #[test]
 #[serial]
 #[ignore = "Requires Qt installed"]
-fn test_find_qt() {
+fn test_find_qt_release() {
     let _tmpdir = common::set_outdir();
+    let _profile = common::set_profile(common::Profile::Release);
 
     let package = find_package("Qt6")
         .components(["Core".into(), "Gui".into(), "Widgets".into()])

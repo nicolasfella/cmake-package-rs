@@ -418,6 +418,9 @@ pub(crate) fn find_target(
 
 #[cfg(test)]
 mod testing {
+    use scopeguard::{guard, ScopeGuard};
+    use serial_test::serial;
+
     use super::*;
 
     #[test]
@@ -554,5 +557,37 @@ mod testing {
             }
             _ => panic!("Expected PropertyValue::Target"),
         }
+    }
+
+    fn clear_env(name: &'static str) -> ScopeGuard<(), impl FnOnce(())> {
+        let value = std::env::var(name);
+        std::env::remove_var(name);
+        guard((), move |_| {
+            if let Ok(value) = value {
+                std::env::set_var(name, value);
+            } else {
+                std::env::remove_var(name);
+            }
+        })
+    }
+
+    #[test]
+    #[serial]
+    fn test_build_type() {
+        let _profile = clear_env("PROFILE");
+        let _debug = clear_env("DEBUG");
+        let _opt_level = clear_env("OPT_LEVEL");
+
+        assert_eq!(build_type(), CMakeBuildType::Debug);
+
+        std::env::set_var("PROFILE", "release");
+        assert_eq!(build_type(), CMakeBuildType::Release);
+
+        std::env::set_var("DEBUG", "1");
+        assert_eq!(build_type(), CMakeBuildType::RelWithDebInfo);
+
+        std::env::set_var("DEBUG", "0");
+        std::env::set_var("OPT_LEVEL", "s");
+        assert_eq!(build_type(), CMakeBuildType::MinSizeRel);
     }
 }
