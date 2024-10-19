@@ -93,11 +93,20 @@ fn test_find_openssl_release() {
             .iter()
             .any(|lib| lib.contains("libssl.so")));
     } else if cfg!(target_os = "windows") {
-        assert_eq!(target.include_directories, ["C:/Program Files/OpenSSL-Win64/include"]);
+        assert_eq!(
+            target.include_directories,
+            ["C:/Program Files/OpenSSL-Win64/include"]
+        );
         assert!(target.location.unwrap().contains("libssl64MD.lib"));
         assert!(target.link_libraries.len() >= 2);
-        assert!(target.link_libraries.iter().any(|lib| lib.contains("libcrypto64MD.lib")));
-        assert!(target.link_libraries.iter().any(|lib| lib.contains("libssl64MD.lib")));
+        assert!(target
+            .link_libraries
+            .iter()
+            .any(|lib| lib.contains("libcrypto64MD.lib")));
+        assert!(target
+            .link_libraries
+            .iter()
+            .any(|lib| lib.contains("libssl64MD.lib")));
     }
 }
 
@@ -151,7 +160,6 @@ fn test_find_qt_release() {
                 "C:/Qt/6.6.1/msvc2019_64/mkspecs/win32-msvc".to_string()
             ]
         );
-
     }
 
     let gui = package

@@ -130,7 +130,11 @@ enum CMakeBuildType {
 fn build_type() -> CMakeBuildType {
     // The PROFILE variable is set to "release" for release builds and to "debug" for any other build type.
     // This is fairly easy to map to CMake's build types...
-    match std::env::var("PROFILE").as_ref().unwrap_or(&"debug".to_string()).as_str() {
+    match std::env::var("PROFILE")
+        .as_ref()
+        .unwrap_or(&"debug".to_string())
+        .as_str()
+    {
         "release" => {
             // If the release profile is enabled, and also "s" or "z" optimimzation is set, meaning "optimize for binary size",
             // then we want to use MinSizeRel.
@@ -151,7 +155,7 @@ fn build_type() -> CMakeBuildType {
 
             // For everything else, there's Mastercard...I mean Release.
             CMakeBuildType::Release
-        },
+        }
         // Any other profile (which really should only be "debug"), we map to Debug.
         _ => CMakeBuildType::Debug,
     }
@@ -330,8 +334,14 @@ fn location_for_build_type(build_type: CMakeBuildType, target: &Target) -> Optio
     match build_type {
         CMakeBuildType::Debug => target.location_debug.clone().or(target.location.clone()),
         CMakeBuildType::Release => target.location_release.clone().or(target.location.clone()),
-        CMakeBuildType::RelWithDebInfo => target.location_relwithdebinfo.clone().or(target.location.clone()),
-        CMakeBuildType::MinSizeRel => target.location_minsizerel.clone().or(target.location.clone())
+        CMakeBuildType::RelWithDebInfo => target
+            .location_relwithdebinfo
+            .clone()
+            .or(target.location.clone()),
+        CMakeBuildType::MinSizeRel => target
+            .location_minsizerel
+            .clone()
+            .or(target.location.clone()),
     }
 }
 
@@ -356,8 +366,7 @@ impl Target {
                 .map_or(vec![], |location| vec![location.clone()])
                 .into_iter()
                 .chain(
-                   self 
-                        .interface_link_libraries
+                    self.interface_link_libraries
                         .as_ref()
                         .map_or(Vec::new(), Clone::clone)
                         .into_iter()
@@ -367,7 +376,7 @@ impl Target {
                 .dedup()
                 .collect(),
             location: location_for_build_type(build_type, &self),
-            name: self.name
+            name: self.name,
         }
     }
 }
@@ -496,7 +505,7 @@ mod testing {
 
     #[test]
     fn from_debug_target() {
-        let target = Target{
+        let target = Target {
             name: "test_target".to_string(),
             location: Some("/path/to/target.so".to_string()),
             location_debug: Some("/path/to/target_debug.so".to_string()),
@@ -512,7 +521,10 @@ mod testing {
         };
 
         let cmake_target = target.into_cmake_target(CMakeBuildType::Debug);
-        assert_eq!(cmake_target.location, Some("/path/to/target_debug.so".to_string()));
+        assert_eq!(
+            cmake_target.location,
+            Some("/path/to/target_debug.so".to_string())
+        );
     }
 
     #[test]

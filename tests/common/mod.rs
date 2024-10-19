@@ -13,7 +13,7 @@ pub fn use_cmake(name: &str) -> ScopeGuard<(), impl FnOnce(())> {
 
     // Prepend the custom cmake path to the PATH in platform-independent way
     let modfied_path = std::env::join_paths(chain!(
-        once(PathBuf::from(cmake_path)),
+        once(cmake_path),
         std::env::split_paths(&path)
     ))
     .unwrap();
@@ -35,14 +35,17 @@ pub fn set_outdir() -> ScopeGuard<(), impl FnOnce(())> {
 
 pub enum Profile {
     Debug,
-    Release
+    Release,
 }
 
 pub fn set_profile(profile: Profile) -> ScopeGuard<(), impl FnOnce(())> {
-    std::env::set_var("PROFILE", match profile {
-        Profile::Debug => "debug",
-        Profile::Release => "release"
-    });
+    std::env::set_var(
+        "PROFILE",
+        match profile {
+            Profile::Debug => "debug",
+            Profile::Release => "release",
+        },
+    );
 
     guard((), |_| {
         std::env::remove_var("PROFILE");
