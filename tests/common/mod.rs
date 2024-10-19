@@ -12,11 +12,8 @@ pub fn use_cmake(name: &str) -> ScopeGuard<(), impl FnOnce(())> {
     assert!(cmake_path.is_dir());
 
     // Prepend the custom cmake path to the PATH in platform-independent way
-    let modfied_path = std::env::join_paths(chain!(
-        once(cmake_path),
-        std::env::split_paths(&path)
-    ))
-    .unwrap();
+    let modfied_path =
+        std::env::join_paths(chain!(once(cmake_path), std::env::split_paths(&path))).unwrap();
 
     std::env::set_var("PATH", modfied_path);
 
