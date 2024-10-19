@@ -12,11 +12,18 @@ permissions:
 
 jobs:
   report:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          #- macos-latest TODO
+
     runs-on: ubuntu-latest
     steps:
     - uses: dorny/test-reporter@v1
       with:
-        artifact: test-results
-        name: Tests
+        artifact: test-results-${{ os.matrix }}
+        name: Tests - {{ os.matrix }}
         path: '*.xml'
         reporter: java-junit

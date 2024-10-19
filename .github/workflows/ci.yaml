@@ -53,5 +53,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results
-          path: target/nextest/ci/test-report-${{ matrix.os }}.junit.xml
+          name: test-results-${{ matrix.os }}
+          path: target/nextest/ci/test-report.junit.xml
