@@ -291,6 +291,8 @@ if (NOT DEFINED OUTPUT_FILE)
     message(FATAL_ERROR "OUTPUT_FILE is not set")
 endif()
 
+message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+
 if (NOT DEFINED TARGET)
     find_package_wrapper(
         PACKAGE ${PACKAGE}

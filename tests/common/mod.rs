@@ -32,3 +32,35 @@ pub fn set_outdir() -> ScopeGuard<(), impl FnOnce(())> {
         std::env::remove_var("OUT_DIR");
     })
 }
+
+pub enum Profile {
+    Debug,
+    Release
+}
+
+pub fn set_profile(profile: Profile) -> ScopeGuard<(), impl FnOnce(())> {
+    std::env::set_var("PROFILE", match profile {
+        Profile::Debug => "debug",
+        Profile::Release => "release"
+    });
+
+    guard((), |_| {
+        std::env::remove_var("PROFILE");
+    })
+}
+
+pub fn set_opt_level(opt_level: &str) -> ScopeGuard<(), impl FnOnce(())> {
+    std::env::set_var("OPT_LEVEL", opt_level);
+
+    guard((), |_| {
+        std::env::remove_var("OPT_LEVEL");
+    })
+}
+
+pub fn enable_debug() -> ScopeGuard<(), impl FnOnce(())> {
+    std::env::set_var("DEBUG", "full");
+
+    guard((), |_| {
+        std::env::remove_var("DEBUG");
+    })
+}

@@ -119,6 +119,44 @@ fn stdio(verbose: bool) -> Stdio {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+enum CMakeBuildType {
+    Debug,
+    Release,
+    RelWithDebInfo,
+    MinSizeRel,
+}
+
+fn build_type() -> CMakeBuildType {
+    // The PROFILE variable is set to "release" for release builds and to "debug" for any other build type.
+    // This is fairly easy to map to CMake's build types...
+    match std::env::var("PROFILE").as_ref().unwrap_or(&"debug".to_string()).as_str() {
+        "release" => {
+            // If the release profile is enabled, and also "s" or "z" optimimzation is set, meaning "optimize for binary size",
+            // then we want to use MinSizeRel.
+            // There's no way in CMake to combine MinSizeRel and RelWithDebInfo. Since those two options kinds contradict themselves,
+            // we make the assumption here that if the user wants to optimize for binary size, they want that more than they want
+            // debug info, so MinSizeRel is checked first.
+            let opt_level = std::env::var("OPT_LEVEL").unwrap_or("0".to_string());
+            if "sz".contains(&opt_level.as_str()) {
+                return CMakeBuildType::MinSizeRel;
+            }
+
+            // If DEBUG is set to anything other than "0", "false" or "none" (meaning to include /some/ kind of debug info),
+            // then we want to use RelWithDebInfo.
+            let debug = std::env::var("DEBUG").unwrap_or("0".to_string());
+            if !["0", "false", "none"].contains(&debug.as_str()) {
+                return CMakeBuildType::RelWithDebInfo;
+            }
+
+            // For everything else, there's Mastercard...I mean Release.
+            CMakeBuildType::Release
+        },
+        // Any other profile (which really should only be "debug"), we map to Debug.
+        _ => CMakeBuildType::Debug,
+    }
+}
+
 /// Performs the actual `find_package()` operation with CMake
 pub(crate) fn find_package(
     name: String,
@@ -141,6 +179,7 @@ pub(crate) fn find_package(
         .stderr(stdio(verbose))
         .current_dir(&working_directory)
         .arg(".")
+        .arg(format!("-DCMAKE_BUILD_TYPE={:?}", build_type()))
         .arg(format!("-DCMAKE_MIN_VERSION={CMAKE_MIN_VERSION}"))
         .arg(format!("-DPACKAGE={}", name))
         .arg(format!("-DOUTPUT_FILE={}", output_file.display()));
@@ -336,6 +375,7 @@ pub(crate) fn find_target(
         .stderr(stdio(package.verbose))
         .current_dir(package.working_directory.path())
         .arg(".")
+        .arg(format!("-DCMAKE_BUILD_TYPE={:?}", build_type()))
         .arg(format!("-DCMAKE_MIN_VERSION={CMAKE_MIN_VERSION}"))
         .arg(format!("-DPACKAGE={}", package.name))
         .arg(format!("-DTARGET={}", target))
