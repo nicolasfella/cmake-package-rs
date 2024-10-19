@@ -1,6 +1,6 @@
 # cmake-package
 
-A Rust crate to for [Cargo build scripts][cargo_build_script] to find [CMake packages][cmake_package] 
+A Rust crate for [Cargo build scripts][cargo_build_script] to find [CMake packages][cmake_package]
 installed on the system and link against them. This is especially useful when your Rust project depends
 on a system library that only provides a CMake package. This is essentially similar to the 
 [`pkg-config`][crate_pkgconfig] crate, but for CMake.
