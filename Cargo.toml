@@ -11,7 +11,7 @@ A helper library for Cargo build-scripts to find and link against existing CMake
 """
 keywords = ["build-dependencies", "cmake"]
 readme = "README.md"
-categories = ["development-tools::build-utilities"]
+categories = ["development-tools::build-utils"]
 exclude = ["/.github", "tests"]
 edition = "2021"
 
