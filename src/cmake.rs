@@ -60,7 +60,7 @@ struct PackageResult {
 /// If found, it also checks that the version of CMake is at least [`CMAKE_MIN_VERSION`].
 ///
 /// Returns [`CMakeProgram`] on success and [`Error::CMakeNotFound`] when the `cmake` executable
-/// is not found or [`Error::UnspportedCMakeVersion`] when the version is too low.
+/// is not found or [`Error::UnsupportedCMakeVersion`] when the version is too low.
 pub fn find_cmake() -> Result<CMakeProgram, Error> {
     let path = which("cmake").or(Err(Error::CMakeNotFound))?;
 
@@ -282,7 +282,7 @@ struct Target {
 /// all targets linked in `interface_link_libraries` recursively.
 ///
 /// This basically implements the CMake logic as described in the documentation
-/// of e.g. [`INTERFACE_COMPILE_DEFINITIONS`][INTERFACE_COMPILE_DEFINITIONS] for
+/// of e.g. [`INTERFACE_COMPILE_DEFINITIONS`][cmake_interface_compile_definitions] for
 /// the target property:
 ///
 /// > When target dependencies are specified using [`target_link_libraries()`][target_link_libraries],
@@ -292,7 +292,7 @@ struct Target {
 /// This function preserves the order of the values as they are found in the targets, the value of the
 /// immediate `target` value is first, followed by all transitive properties of each linked target.
 ///
-/// [INTERFACE_COMPILE_DEFINITIONS]: https://cmake.org/cmake/help/latest/prop_tgt/INTERFACE_COMPILE_DEFINITIONS.html
+/// [cmake_interface_compile_definitions]: https://cmake.org/cmake/help/latest/prop_tgt/INTERFACE_COMPILE_DEFINITIONS.html
 /// [target_link_libraries]: https://cmake.org/cmake/help/latest/command/target_link_libraries.html
 fn collect_from_targets<'a>(
     target: &'a Target,

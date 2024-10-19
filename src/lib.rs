@@ -90,7 +90,7 @@ pub use version::{Version, VersionError};
 /// A CMake package found on the system.
 ///
 /// Represents a CMake package found on the system. To find a package, use the [`find_package()`] function.
-/// The package can be queried for information about its individual CMake targets using the [`target()`] method.
+/// The package can be queried for information about its individual CMake targets by [`CMakePackage::target()`].
 ///
 /// # Example
 /// ```no_run
@@ -108,7 +108,7 @@ pub struct CMakePackage {
     pub name: String,
     /// Version of the package found on the system
     pub version: Option<Version>,
-    /// Components of the package, as requested by the user in `find_package()`
+    /// Components of the package, as requested by the user in [`find_package()`]
     pub components: Option<Vec<String>>,
 }
 
@@ -171,34 +171,40 @@ pub struct CMakeTarget {
     ///
     /// Contains preprocessor definitions provided by the target and all its transitive dependencies
     /// via their [`INTERFACE_COMPILE_DEFINITIONS`][cmake_interface_compile_definitions] target properties.
+    ///
     /// [cmake_interface_compile_definitions]: https://cmake.org/cmake/help/latest/prop_tgt/INTERFACE_COMPILE_DEFINITIONS.html
     pub compile_definitions: Vec<String>,
     /// List of options to pass to the compiler.
     ///
     /// Contains compiler options provided by the target and all its transitive dependencies via
     /// their [`INTERFACE_COMPILE_OPTIONS`][cmake_interface_compile_options] target properties.
+    ///
     /// [cmake_interface_compile_options]: https://cmake.org/cmake/help/latest/prop_tgt/INTERFACE_COMPILE_OPTIONS.html
     pub compile_options: Vec<String>,
     /// List of include directories required to build the target.
     ///
     /// Contains include directories provided by the target and all its transitive dependencies via
     /// their [`INTERFACE_INCLUDE_DIRECTORIES`][cmake_interface_include_directories] target properties.
+    ///
     /// [cmake_interface_include_directories]: https://cmake.org/cmake/help/latest/prop_tgt/INTERFACE_INCLUDE_DIRECTORIES.html
     pub include_directories: Vec<String>,
     /// List of directories to use for the link step of shared library, module and executable targets.
     ///
     /// Contains link directories provided by the target and all its transitive dependencies via
     /// their [`INTERFACE_LINK_DIRECTORIES`][cmake_interface_link_directories] target properties.
+    ///
     /// [cmake_interface_link_directories]: https://cmake.org/cmake/help/latest/prop_tgt/INTERFACE_LINK_DIRECTORIES.html
     pub link_directories: Vec<String>,
     /// List of target's direct link dependencies, followed by indirect dependencies from the transitive closure of the direct
     /// dependencies' [`INTERFACE_LINK_LIBRARIES`][cmake_interface_link_libraries] properties
+    ///
     /// [cmake_interface_link_libraries]: https://cmake.org/cmake/help/latest/prop_tgt/INTERFACE_LINK_LIBRARIES.html
     pub link_libraries: Vec<String>,
     /// List of options to use for the link step of shared library, module and executable targets as well as the device link step.
     ///
     /// Contains link options provided by the target and all its transitive dependencies via
     /// their [`INTERFACE_LINK_OPTIONS`][cmake_interface_link_options] target properties.
+    ///
     /// [cmake_interface_link_options]: https://cmake.org/cmake/help/latest/prop_tgt/INTERFACE_LINK_OPTIONS.html
     pub link_options: Vec<String>,
 }
@@ -207,7 +213,7 @@ impl CMakeTarget {
     /// Instructs cargo to link the final binary against the target.
     ///
     /// This method prints the necessary [`cargo:rustc-link-search=native={}`][cargo_rustc_link_search],
-    /// [`cargo:rustc-link-arg={}`][cargo_rustc_link_arg], and [`cargo:rustc-link-lib=dylib={}`][cargo_rust_link_lib]
+    /// [`cargo:rustc-link-arg={}`][cargo_rustc_link_arg], and [`cargo:rustc-link-lib=dylib={}`][cargo_rustc_link_lib]
     /// directives to the standard output for each of the target's [`link_directories`][Self::link_directories],
     /// [`link_options`][Self::link_options], and [`link_libraries`][Self::link_libraries] respectively.
     ///
@@ -228,7 +234,7 @@ impl CMakeTarget {
 }
 
 /// A builder for creating a [`CMakePackage`] instance. An instance of the builder is created by calling
-/// the [`find_package()`] function. Once the package is configured, the [`find()`] method will actually
+/// the [`find_package()`] function. Once the package is configured, [`FindPackageBuilder::find()`] will actually
 /// try to find the CMake package and return a [`CMakePackage`] instance (or error if the package is not found
 /// or an error occurrs during the search).
 #[derive(Debug, Clone)]
@@ -251,7 +257,7 @@ impl FindPackageBuilder {
 
     /// Optionally specifies the minimum required version for the package to find.
     /// If the package is not found or the version is too low, the `find()` method will return
-    /// [`Error::VersionTooOld`] with the version of the package found on the system.
+    /// [`Error::Version`] with the version of the package found on the system.
     pub fn version(self, version: impl TryInto<Version>) -> Self {
         Self {
             version: Some(
@@ -268,6 +274,7 @@ impl FindPackageBuilder {
     /// as not found and the `find()` method will return [`Error::PackageNotFound`].
     /// See the documentation on CMake's [`find_package()`][cmake_find_package] function and how it
     /// treats the `COMPONENTS` argument.
+    ///
     /// [cmake_find_package]: https://cmake.org/cmake/help/latest/command/find_package.html
     pub fn components(self, components: impl Into<Vec<String>>) -> Self {
         Self {
