@@ -178,7 +178,7 @@ function(resolve_deps_recursively)
         INTERFACE_LINK_OPTIONS
     )
     set(cfg_props
-        #LOCATION
+        LOCATION
     )
     set(cfg_types
         Release
@@ -188,7 +188,7 @@ function(resolve_deps_recursively)
     )
     foreach(cfg_prop ${cfg_props})
         foreach(config ${cfg_types})
-            list(APPEND props "${cfg_prop}_${config}")
+            list(APPEND single_value_props "${cfg_prop}_${config}")
         endforeach()
     endforeach()
 

@@ -138,7 +138,7 @@ fn build_type() -> CMakeBuildType {
             // we make the assumption here that if the user wants to optimize for binary size, they want that more than they want
             // debug info, so MinSizeRel is checked first.
             let opt_level = std::env::var("OPT_LEVEL").unwrap_or("0".to_string());
-            if "sz".contains(&opt_level.as_str()) {
+            if "sz".contains(&opt_level) {
                 return CMakeBuildType::MinSizeRel;
             }
 
@@ -258,6 +258,14 @@ impl From<PropertyValue> for Vec<String> {
 struct Target {
     name: String,
     location: Option<String>,
+    #[serde(rename = "LOCATION_Release")]
+    location_release: Option<String>,
+    #[serde(rename = "LOCATION_Debug")]
+    location_debug: Option<String>,
+    #[serde(rename = "LOCATION_RelWithDebInfo")]
+    location_relwithdebinfo: Option<String>,
+    #[serde(rename = "LOCATION_MinSizeRel")]
+    location_minsizerel: Option<String>,
     interface_compile_definitions: Option<Vec<String>>,
     interface_compile_options: Option<Vec<String>>,
     interface_include_directories: Option<Vec<String>>,
@@ -318,29 +326,37 @@ fn collect_from_targets_unique<'a>(
         .collect()
 }
 
-impl From<Target> for CMakeTarget {
-    fn from(target: Target) -> Self {
-        Self {
-            compile_definitions: collect_from_targets_unique(&target, |target| {
+fn location_for_build_type(build_type: CMakeBuildType, target: &Target) -> Option<String> {
+    match build_type {
+        CMakeBuildType::Debug => target.location_debug.clone().or(target.location.clone()),
+        CMakeBuildType::Release => target.location_release.clone().or(target.location.clone()),
+        CMakeBuildType::RelWithDebInfo => target.location_relwithdebinfo.clone().or(target.location.clone()),
+        CMakeBuildType::MinSizeRel => target.location_minsizerel.clone().or(target.location.clone())
+    }
+}
+
+impl Target {
+    fn into_cmake_target(self, build_type: CMakeBuildType) -> CMakeTarget {
+        CMakeTarget {
+            compile_definitions: collect_from_targets_unique(&self, |target| {
                 &target.interface_compile_definitions
             }),
-            compile_options: collect_from_targets(&target, |target| {
+            compile_options: collect_from_targets(&self, |target| {
                 &target.interface_compile_options
             }),
-            include_directories: collect_from_targets_unique(&target, |target| {
+            include_directories: collect_from_targets_unique(&self, |target| {
                 &target.interface_include_directories
             }),
-            link_directories: collect_from_targets_unique(&target, |target| {
+            link_directories: collect_from_targets_unique(&self, |target| {
                 &target.interface_link_directories
             }),
-            link_options: collect_from_targets(&target, |target| &target.interface_link_options),
-            link_libraries: target
-                .location
+            link_options: collect_from_targets(&self, |target| &target.interface_link_options),
+            link_libraries: location_for_build_type(build_type, &self)
                 .as_ref()
                 .map_or(vec![], |location| vec![location.clone()])
                 .into_iter()
                 .chain(
-                    target
+                   self 
                         .interface_link_libraries
                         .as_ref()
                         .map_or(Vec::new(), Clone::clone)
@@ -350,8 +366,8 @@ impl From<Target> for CMakeTarget {
                 .sorted() // FIXME: should we really do this for libraries? Linking order might be important...
                 .dedup()
                 .collect(),
-            name: target.name,
-            location: target.location,
+            location: location_for_build_type(build_type, &self),
+            name: self.name
         }
     }
 }
@@ -369,13 +385,14 @@ pub(crate) fn find_target(
         "target_{}.json",
         target.to_lowercase().replace(":", "_")
     ));
+    let build_type = build_type();
     let mut command = Command::new(&package.cmake.path);
     command
         .stdout(stdio(package.verbose))
         .stderr(stdio(package.verbose))
         .current_dir(package.working_directory.path())
         .arg(".")
-        .arg(format!("-DCMAKE_BUILD_TYPE={:?}", build_type()))
+        .arg(format!("-DCMAKE_BUILD_TYPE={:?}", build_type))
         .arg(format!("-DCMAKE_MIN_VERSION={CMAKE_MIN_VERSION}"))
         .arg(format!("-DPACKAGE={}", package.name))
         .arg(format!("-DTARGET={}", target))
@@ -396,7 +413,7 @@ pub(crate) fn find_target(
         })
         .ok()?;
 
-    Some(target.into())
+    Some(target.into_cmake_target(build_type))
 }
 
 #[cfg(test)]
@@ -408,6 +425,10 @@ mod testing {
         let target = Target {
             name: "my_target".to_string(),
             location: Some("/path/to/target.so".to_string()),
+            location_release: None,
+            location_debug: None,
+            location_minsizerel: None,
+            location_relwithdebinfo: None,
             interface_compile_definitions: Some(vec!["DEFINE1".to_string(), "DEFINE2".to_string()]),
             interface_compile_options: Some(vec!["-O2".to_string(), "-Wall".to_string()]),
             interface_include_directories: Some(vec!["/path/to/include".to_string()]),
@@ -419,6 +440,10 @@ mod testing {
                 PropertyValue::Target(Target {
                     name: "dependency".to_string(),
                     location: Some("/path/to/dependency.so".to_string()),
+                    location_release: None,
+                    location_debug: None,
+                    location_minsizerel: None,
+                    location_relwithdebinfo: None,
                     interface_compile_definitions: Some(vec!["DEFINE3".to_string()]),
                     interface_compile_options: Some(vec!["-O3".to_string()]),
                     interface_include_directories: Some(vec![
@@ -433,7 +458,7 @@ mod testing {
             ]),
         };
 
-        let cmake_target: CMakeTarget = target.into();
+        let cmake_target: CMakeTarget = target.into_cmake_target(CMakeBuildType::Release);
 
         assert_eq!(cmake_target.name, "my_target");
         assert_eq!(cmake_target.location, Some("/path/to/target.so".into()));
@@ -464,6 +489,27 @@ mod testing {
                 "library2",
             ]
         );
+    }
+
+    #[test]
+    fn from_debug_target() {
+        let target = Target{
+            name: "test_target".to_string(),
+            location: Some("/path/to/target.so".to_string()),
+            location_debug: Some("/path/to/target_debug.so".to_string()),
+            location_minsizerel: None,
+            location_relwithdebinfo: None,
+            location_release: None,
+            interface_compile_definitions: None,
+            interface_compile_options: None,
+            interface_include_directories: None,
+            interface_link_directories: None,
+            interface_link_options: None,
+            interface_link_libraries: None,
+        };
+
+        let cmake_target = target.into_cmake_target(CMakeBuildType::Debug);
+        assert_eq!(cmake_target.location, Some("/path/to/target_debug.so".to_string()));
     }
 
     #[test]
