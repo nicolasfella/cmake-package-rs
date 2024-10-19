@@ -50,11 +50,8 @@ jobs:
         with:
           command: nextest
           args: run --all-features --profile ci
-      - name: Test Report
-        uses: dorny/test-reporter@v1
+      - uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: "CMake Package Tests"
+          name: test-results
           path: target/nextest/ci/test-report.junit.xml
-          reporter: java-junit
-
