@@ -55,6 +55,6 @@ jobs:
         if: success() || failure()
         with:
           name: "CMake Package Tests"
-          path: target/test-report.junit.xml
+          path: target/nextest/ci/test-report.junit.xml
           reporter: java-junit
 

@@ -3,4 +3,4 @@
 fail-fast = false
 
 [profile.ci.junit]
-path = "target/test-report.junit.xml"
+path = "test-report.junit.xml"
