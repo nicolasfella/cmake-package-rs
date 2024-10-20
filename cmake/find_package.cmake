@@ -166,6 +166,7 @@ function(resolve_deps_recursively)
     set(single_value_props
         NAME
         LOCATION
+        IMPORTED_IMPLIB
         IMPORTED_NO_SONAME
     )
     set(multi_value_props
@@ -180,6 +181,7 @@ function(resolve_deps_recursively)
     )
     set(cfg_props
         LOCATION
+        IMPORTED_IMPLIB
     )
     set(cfg_types
         Release
