@@ -81,6 +81,7 @@
 
 use std::io::Write;
 
+#[cfg(target_os = "linux")]
 use regex::Regex;
 use tempfile::TempDir;
 
