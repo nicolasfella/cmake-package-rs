@@ -79,6 +79,10 @@
 //! [cmake_find_package]: https://cmake.org/cmake/help/latest/command/find_package.html
 //! [cmake_generator_expr]: https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
 
+use std::io::Write;
+
+#[cfg(target_os = "linux")]
+use regex::Regex;
 use tempfile::TempDir;
 
 mod cmake;
@@ -165,8 +169,6 @@ impl CMakePackage {
 pub struct CMakeTarget {
     /// Name of the CMake target
     pub name: String,
-    /// Location of the target's binary (library or executable)
-    pub location: Option<String>,
     /// List of public compile definitions requirements for a library.
     ///
     /// Contains preprocessor definitions provided by the target and all its transitive dependencies
@@ -209,6 +211,20 @@ pub struct CMakeTarget {
     pub link_options: Vec<String>,
 }
 
+/// Turns /usr/lib/libfoo.so.5 into foo, so that -lfoo rather than -l/usr/lib/libfoo.so.5
+/// is passed to the linker.
+#[cfg(target_os = "linux")]
+fn link_name(lib: &str) -> Option<&str> {
+    let regex = Regex::new(r"lib([^/]+)\.so.*").ok()?;
+    regex.captures(lib)?.get(1).map(|f| f.as_str())
+}
+
+
+#[cfg(target_os = "windows")]
+fn link_name(lib: &str) -> Option<&str> {
+    Some(lib)
+}
+
 impl CMakeTarget {
     /// Instructs cargo to link the final binary against the target.
     ///
@@ -221,14 +237,21 @@ impl CMakeTarget {
     /// [cargo_rustc_link_arg]: https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-arg
     /// [cargo_rustc_link_lib]: https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-lib]
     pub fn link(&self) {
+        self.link_write(&mut std::io::stdout());
+    }
+
+    fn link_write<W: Write>(&self, io: &mut W) {
         self.link_directories.iter().for_each(|dir| {
-            println!("cargo:rustc-link-search=native={}", dir);
+            writeln!(io, "cargo:rustc-link-search=native={}", dir).unwrap();
         });
         self.link_options.iter().for_each(|opt| {
-            println!("cargo:rustc-link-arg={}", opt);
+            writeln!(io, "cargo:rustc-link-arg={}", opt).unwrap();
         });
         self.link_libraries.iter().for_each(|lib| {
-            println!("cargo:rustc-link-lib=dylib={}", lib);
+            match link_name(lib) {
+                Some(lib) => writeln!(io, "cargo:rustc-link-lib=dylib={}", lib).unwrap(),
+                None => writeln!(io, "cargo:rustc-link-arg={}", lib).unwrap(),
+            }
         });
     }
 }
@@ -340,5 +363,31 @@ mod testing {
             Err(cmake::Error::PackageNotFound) => (),
             Err(err) => panic!("Unexpected error: {:?}", err),
         }
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn test_link_to() {
+        let target = CMakeTarget {
+            name: "foo".into(),
+            compile_definitions: vec![],
+            compile_options: vec![],
+            include_directories: vec![],
+            link_directories: vec!["/usr/lib64".into()],
+            link_libraries: vec!["/usr/lib/libbar.so".into(), "/usr/lib64/libfoo.so.5".into()],
+            link_options: vec![],
+        };
+
+        let mut buf = Vec::new();
+        target.link_write(&mut buf);
+        let output = String::from_utf8(buf).unwrap();
+        assert_eq!(
+            output.lines().collect::<Vec<&str>>(),
+            vec![
+                "cargo:rustc-link-search=native=/usr/lib64",
+                "cargo:rustc-link-lib=dylib=bar",
+                "cargo:rustc-link-lib=dylib=foo"
+            ]
+        );
     }
 }

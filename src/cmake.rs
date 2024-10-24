@@ -270,6 +270,15 @@ struct Target {
     location_relwithdebinfo: Option<String>,
     #[serde(rename = "LOCATION_MinSizeRel")]
     location_minsizerel: Option<String>,
+    imported_implib: Option<String>,
+    #[serde(rename = "IMPORTED_IMPLIB_Release")]
+    imported_implib_release: Option<String>,
+    #[serde(rename = "IMPORTED_IMPLIB_Debug")]
+    imported_implib_debug: Option<String>,
+    #[serde(rename = "IMPORTED_IMPLIB_RelWithDebInfo")]
+    imported_implib_relwithdebinfo: Option<String>,
+    #[serde(rename = "IMPORTED_IMPLIB_MinSizeRel")]
+    imported_implib_minsizerel: Option<String>,
     interface_compile_definitions: Option<Vec<String>>,
     interface_compile_options: Option<Vec<String>>,
     interface_include_directories: Option<Vec<String>>,
@@ -330,6 +339,21 @@ fn collect_from_targets_unique<'a>(
         .collect()
 }
 
+fn implib_for_build_type(build_type: CMakeBuildType, target: &Target) -> Option<String> {
+    match build_type {
+        CMakeBuildType::Debug => target.imported_implib_debug.clone().or(target.imported_implib.clone()),
+        CMakeBuildType::Release => target.imported_implib_release.clone().or(target.imported_implib.clone()),
+        CMakeBuildType::RelWithDebInfo => target
+            .imported_implib_relwithdebinfo
+            .clone()
+            .or(target.imported_implib.clone()),
+        CMakeBuildType::MinSizeRel => target
+            .imported_implib_minsizerel
+            .clone()
+            .or(target.imported_implib.clone()),
+    }.or_else(|| location_for_build_type(build_type, target))
+}
+
 fn location_for_build_type(build_type: CMakeBuildType, target: &Target) -> Option<String> {
     match build_type {
         CMakeBuildType::Debug => target.location_debug.clone().or(target.location.clone()),
@@ -342,6 +366,14 @@ fn location_for_build_type(build_type: CMakeBuildType, target: &Target) -> Optio
             .location_minsizerel
             .clone()
             .or(target.location.clone()),
+    }
+}
+
+fn library_for_build_type(build_type: CMakeBuildType, target: &Target) -> Option<String> {
+    if cfg!(target_os = "windows") {
+        implib_for_build_type(build_type, target)
+    } else {
+        location_for_build_type(build_type, target)
     }
 }
 
@@ -361,7 +393,7 @@ impl Target {
                 &target.interface_link_directories
             }),
             link_options: collect_from_targets(&self, |target| &target.interface_link_options),
-            link_libraries: location_for_build_type(build_type, &self)
+            link_libraries: library_for_build_type(build_type, &self)
                 .as_ref()
                 .map_or(vec![], |location| vec![location.clone()])
                 .into_iter()
@@ -375,7 +407,6 @@ impl Target {
                 .sorted() // FIXME: should we really do this for libraries? Linking order might be important...
                 .dedup()
                 .collect(),
-            location: location_for_build_type(build_type, &self),
             name: self.name,
         }
     }
@@ -421,7 +452,7 @@ pub(crate) fn find_target(
             eprintln!("Failed to parse target JSON: {:?}", e);
         })
         .ok()?;
-
+    println!("Target: {:?}", target);
     Some(target.into_cmake_target(build_type))
 }
 
@@ -437,10 +468,6 @@ mod testing {
         let target = Target {
             name: "my_target".to_string(),
             location: Some("/path/to/target.so".to_string()),
-            location_release: None,
-            location_debug: None,
-            location_minsizerel: None,
-            location_relwithdebinfo: None,
             interface_compile_definitions: Some(vec!["DEFINE1".to_string(), "DEFINE2".to_string()]),
             interface_compile_options: Some(vec!["-O2".to_string(), "-Wall".to_string()]),
             interface_include_directories: Some(vec!["/path/to/include".to_string()]),
@@ -452,10 +479,6 @@ mod testing {
                 PropertyValue::Target(Target {
                     name: "dependency".to_string(),
                     location: Some("/path/to/dependency.so".to_string()),
-                    location_release: None,
-                    location_debug: None,
-                    location_minsizerel: None,
-                    location_relwithdebinfo: None,
                     interface_compile_definitions: Some(vec!["DEFINE3".to_string()]),
                     interface_compile_options: Some(vec!["-O3".to_string()]),
                     interface_include_directories: Some(vec![
@@ -466,14 +489,15 @@ mod testing {
                     interface_link_libraries: Some(vec![PropertyValue::String(
                         "dependency_library".to_string(),
                     )]),
+                    ..Default::default()
                 }),
             ]),
+            ..Default::default()
         };
 
         let cmake_target: CMakeTarget = target.into_cmake_target(CMakeBuildType::Release);
 
         assert_eq!(cmake_target.name, "my_target");
-        assert_eq!(cmake_target.location, Some("/path/to/target.so".into()));
         assert_eq!(
             cmake_target.compile_definitions,
             vec!["DEFINE1", "DEFINE2", "DEFINE3"]
@@ -508,23 +532,12 @@ mod testing {
         let target = Target {
             name: "test_target".to_string(),
             location: Some("/path/to/target.so".to_string()),
-            location_debug: Some("/path/to/target_debug.so".to_string()),
-            location_minsizerel: None,
-            location_relwithdebinfo: None,
-            location_release: None,
-            interface_compile_definitions: None,
-            interface_compile_options: None,
-            interface_include_directories: None,
-            interface_link_directories: None,
-            interface_link_options: None,
-            interface_link_libraries: None,
+            location_debug: Some("/path/to/libtarget_debug.so".to_string()),
+            ..Default::default()
         };
 
         let cmake_target = target.into_cmake_target(CMakeBuildType::Debug);
-        assert_eq!(
-            cmake_target.location,
-            Some("/path/to/target_debug.so".to_string())
-        );
+        assert_eq!(cmake_target.link_libraries, vec!["/path/to/libtarget_debug.so"]);
     }
 
     #[test]
